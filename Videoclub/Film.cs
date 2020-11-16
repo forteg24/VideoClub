@@ -20,13 +20,31 @@ namespace Videoclub
         static SqlConnection connection = new SqlConnection(connectionString);
 
         List<Film> films = new List<Film>();
-
+        
         public void Catalogue(DateTime userBirthdate)
         {
             int edad = DateTime.Today.AddTicks(-userBirthdate.Ticks).Year - 1;
 
+            LoadFilms();
+
+            bool stayCatalogue;
+            do
+            {
+                ManageCataloque(ref stayCatalogue);
+            } 
+            while (stayCatalogue);
+            
+            films.Clear();
+            Console.Clear();
+        }
+        
+        private void LoadFilms()
+        {
             connection.Open();
+            
+            // *? Think wheather you are selecting more than you need
             string query = $"SELECT * FROM Films WHERE RecommendedAge <= '{edad}' order by Id asc";
+            
             SqlCommand command = new SqlCommand(query, connection);
             SqlDataReader register = command.ExecuteReader();
 
@@ -41,63 +59,63 @@ namespace Videoclub
                     State = Convert.ToString(register["State"])
                 });
             }
-            connection.Close();
-
-            bool stayCatalogue;
-            do
-            {
-                Console.Clear();
-                Console.WriteLine("\n\tCatalogue\n");
-
-                foreach (var f in films)
-                {
-                    Console.WriteLine($"\t{f.Id}. {f.Title}");
-                }
-
-                stayCatalogue = true;
-                Console.Write("\n\tSelect the movie for which you want to see the data. Empty to exit.\n\t");
-
-                string catalogueAnswer = Console.ReadLine();
-
-                if (catalogueAnswer == "")
-                {
-                    stayCatalogue = false;
-                }
-                else
-                {
-                    int? numberCatalogueAnswer = null;
-                    try
-                    {
-                        numberCatalogueAnswer = Convert.ToInt32(catalogueAnswer);
-                    }
-                    catch
-                    {
-                        Program.ShowError("\n\tThe answer must by empty or a number.");
-                    }
-
-                    if (numberCatalogueAnswer != null)
-                    {
-                        Film film = new Film();
-                        try
-                        {
-                            film = films.Where(x => x.Id == numberCatalogueAnswer).FirstOrDefault();
-
-                            Console.Clear();
-                            Console.WriteLine($"\n\tTitle: {film.Title}\n\n\tSynopsys: {film.Synopsis}\n\n\tRecommendedage: {film.RecommendedAge}\n\n\tState: {film.State}\n\n\n\tPress Enter to exit.");
-                            Console.ReadLine();
-                        }
-                        catch
-                        {
-
-                            Program.ShowError("\n\tThe number is not valid.");
-                        }
-
-                    }
-                }
-
-            } while (stayCatalogue);
-            films.Clear();
+            
+            connection.Close();    
+        }
+        
+        private void ManageCatalogue(ref bool stayCatalogue)
+        {
             Console.Clear();
+            Console.WriteLine("\n\tCatalogue\n");
+
+            foreach (var f in films)
+            {
+                Console.WriteLine($"\t{f.Id}. {f.Title}");
+            }
+
+            stayCatalogue = true;
+            Console.Write("\n\tSelect the movie for which you want to see the data. Empty to exit.\n\t");
+
+            string catalogueAnswer = Console.ReadLine();
+
+            if (catalogueAnswer == "")
+            {
+                stayCatalogue = false;
+            }
+            else
+            {
+                ShowFilmInformation(Convert.ToInt32(catalogueAnswer));
+            }   
+        }
+        
+        private ShowFilmInformation(int filmNumber)
+        {
+            int? numberCatalogueAnswer = null;
+            try
+            {
+                numberCatalogueAnswer = filmNumber;
+            }
+            catch
+            {
+                Program.ShowError("\n\tThe answer must by empty or a number.");
+            }
+
+            if (numberCatalogueAnswer != null)
+            {
+                Film film = new Film();
+                try
+                {
+                    film = films.Where(x => x.Id == numberCatalogueAnswer).FirstOrDefault();
+
+                    Console.Clear();
+                    Console.WriteLine($"\n\tTitle: {film.Title}\n\n\tSynopsys: {film.Synopsis}\n\n\tRecommendedage: {film.RecommendedAge}\n\n\tState: {film.State}\n\n\n\tPress Enter to exit.");
+                    Console.ReadLine();
+                }
+                catch
+                {
+                    Program.ShowError("\n\tThe number is not valid.");
+                }
+            }
         }
 
         public void RentAFilm(DateTime userBirthdate, string userEmail)
